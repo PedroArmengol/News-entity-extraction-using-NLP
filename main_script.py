@@ -9,9 +9,12 @@
 #05/09/2018
 #Initial exercise to locate source and target in the text
 import os
+import re
 import spacy
 import numpy
 import re
+import math
+from random import shuffle
 from spacy.attrs import ENT_IOB, ENT_TYPE
 
 nlp = spacy.load('es')
@@ -20,119 +23,92 @@ nlp = spacy.load('es')
 name = "AFP_SPA_19940707.0301"
 # Functions
 def adjust(num, text):
-	'''
-	Adjust the number of spaces based on the number of lines in the document
-	'''
-	spaces = text[0:num].count('\n')
-	adj_number = num - spaces
+    '''
+    Adjust the number of spaces based on the number of lines in the document
+    '''
+    spaces = text[0:num].count('\n')
+    adj_number = num - spaces
 
-	return adj_number
+    return adj_number
 
 
 def format_text(name):
     '''
     Return dictionary with key: text_name and value(text,label entities)
     '''
+    print(name)
     text = open('protest_annotation_chicago/raw/'+name+".txt")
+    print("text")
+    print(text)
     text = text.read()
     annotations = open('protest_annotation_chicago/ann/'+name+".ann")
+    print("annotations")
+    print(annotations)
     #Format the annotations
     list_tuples = []
+    list_entities = []
     for line in annotations:
-    	stripped = line.strip() 
-    	stripped = stripped.split("\t")
-    	#Detect if entity (not rlationship R)
-    	if stripped[0][0] == "T":
-    		if ";" in stripped[1]:
-    			stripped[1] = stripped[1].replace(";"," ")
-    		#Extract position
-    		position = [int(s) for s in stripped[1].split() if s.isdigit()]
-    		#Extract class 
-    		entity = stripped[1].split()[0]
-    		#Make tupples depending on the number of times that entity appears
-    		for i in range(int(len(position)/2)):
-    			tuple1 = (adjust(position[0],text),adjust(position[1],text),entity)
-    			list_tuples.append(tuple1)
-    			#Removed append locations
-    			position.remove(position[0])
-    			position.remove(position[0])
+        stripped = line.strip() 
+        stripped = stripped.split("\t")
+        #Detect if entity (not rlationship R)
+        print(stripped)
+        if stripped[0][0] == "T":
+            if ";" in stripped[1]:
+                stripped[1] = stripped[1].replace(";"," ")
+            #Extract position
+            position = [int(s) for s in stripped[1].split() if s.isdigit()]
+            #Extract class 
+            entity = stripped[1].split()[0]
+            list_entities.append(entity)
+            #Make tupples depending on the number of times that entity appears
+            for i in range(int(len(position)/2)):
+                tuple1 = (adjust(position[0],text),adjust(position[1],text),entity)
+                list_tuples.append(tuple1)
+                #Removed append locations
+                position.remove(position[0])
+                position.remove(position[0])
   
-    return (text,{"entities": list_tuples})
+    return ((text,{"entities": list_tuples}),(list_entities))
 
 
-tuple1 = format_text(name)
+def train_data(list_documents,percentage):
+    #Suffle elements of the list
+    #Divide data in training and testing
+    #apply format text to each document in training
+    data = list_documents
+    shuffle(data)
+    #Rounded downward:more elements for the testing set
+    training_set = data[0:math.floor(len(list_documents)*percentage)]
+    testing_set = data[math.floor(len(list_documents)*percentage):]
+    training_data = []
+    list_entities = []
+    for i in training_set:
+        tuple1, entities = format_text(i)
+        training_data.append(tuple1)
+        for i in entities:
+            list_entities.append(i)
+    #Get a list with the type of entities in the text
+    list_entities = set(list_entities)
+
+    #Take out cases where there is not label data
+    for i in training_data:
+        if i[1]["entities"] == []:
+            training_data.remove(i)
+
+    return training_data, list_entities, testing_set
 
 '''
-###################################
-
-Train data
-    data = []
-    for i in list_docs:
-    	obj = format_text(i)
-    	data.append(obj)
-
-
+RUN IT
+'''
 
 list_documents = os.listdir("protest_annotation_chicago/raw")
-list_annotations = os.listdir("protest_annotation_chicago/ann")
-list_headers = []
-list_places =[]
-
+list1 = []
 for i in list_documents:
-    header, place = read_text(i)
-    list_headers.append(header)
-    list_places.append(place)
-'''
+    name = re.sub('\.txt$', '', i)
+    list1.append(name)
 
-'''
-#POS
-doc = nlp(list_headers[0])
-
-#POS 
-for token in doc:
-	print(token.text, token.lemma_, token.pos_, 
-		token.tag_, token.dep_,token.shape_, 
-		token.is_alpha, token.is_stop)
-'''
-
-'''
-#ENTITY RECOGNITION 
-# Check actual entities: 
-for ent in doc.ents:
-    print(ent.text, ent.start_char, ent.end_char, ent.label_)
-
-ents = [(e.text, e.start_char, e.end_char, e.label_) for e in doc.ents]
-print(ents)
-
-# Add new entities
-doc = nlp(u"FB is hiring a new Vice President of global policy")
-ents = [(e.text, e.start_char, e.end_char, e.label_) for e in doc.ents]
-print('Before', ents)
-# the model didn't recognise "FB" as an entity :(
-
-ORG = doc.vocab.strings[u'ORG']  # get hash value of entity label
-fb_ent = Span(doc, 0, 1, label=ORG) # create a Span for the new entity
-doc.ents = list(doc.ents) + [fb_ent]
-
-ents = [(e.text, e.start_char, e.end_char, e.label_) for e in doc.ents]
-print('After', ents)
-
-#Setting the characteristics of the entities
-doc = nlp.make_doc(u'London is a big city in the United Kingdom.')
-print('Before', list(doc.ents))  # []
-
-header = [ENT_IOB, ENT_TYPE]
-attr_array = numpy.zeros((len(doc), len(header)))
-attr_array[0, 0] = 3  # 
-#ENT_IOB = 3 Begining, 1 Inside, 2 Outside
-#
-#
-attr_array[0, 1] = doc.vocab.strings[u'GPE']
-doc.from_array(header, attr_array)
-print('After', list(doc.ents))  # [London]
-'''
-
-
+list_documents = list1
+training_data, list_entities, testing_set = train_data(list_documents,0.85)
 
 
 
