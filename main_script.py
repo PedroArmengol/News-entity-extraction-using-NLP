@@ -8,18 +8,19 @@
 #Pedro Armengol
 #05/09/2018
 #Initial exercise to locate source and target in the text
+from __future__ import unicode_literals, print_function
 import os
 import re
 import spacy
 import numpy
 import re
 import math
-from random import shuffle
 from spacy.attrs import ENT_IOB, ENT_TYPE
+import plac
+import random
+from pathlib import Path
 
-nlp = spacy.load('es')
-
-###### Preprocessing
+###### PREPROCESSING
 name = "AFP_SPA_19940707.0301"
 # Functions
 def adjust(num, text):
@@ -36,14 +37,9 @@ def format_text(name):
     '''
     Return dictionary with key: text_name and value(text,label entities)
     '''
-    print(name)
     text = open('protest_annotation_chicago/raw/'+name+".txt")
-    print("text")
-    print(text)
     text = text.read()
     annotations = open('protest_annotation_chicago/ann/'+name+".ann")
-    print("annotations")
-    print(annotations)
     #Format the annotations
     list_tuples = []
     list_entities = []
@@ -51,7 +47,6 @@ def format_text(name):
         stripped = line.strip() 
         stripped = stripped.split("\t")
         #Detect if entity (not rlationship R)
-        print(stripped)
         if stripped[0][0] == "T":
             if ";" in stripped[1]:
                 stripped[1] = stripped[1].replace(";"," ")
@@ -71,44 +66,124 @@ def format_text(name):
     return ((text,{"entities": list_tuples}),(list_entities))
 
 
-def train_data(list_documents,percentage):
-    #Suffle elements of the list
-    #Divide data in training and testing
-    #apply format text to each document in training
+def splitting(list_documents, percentage):
+    '''
+    Divide the docs in training and testing based on the selected percentage
+    '''
     data = list_documents
-    shuffle(data)
+    random.shuffle(data)
     #Rounded downward:more elements for the testing set
     training_set = data[0:math.floor(len(list_documents)*percentage)]
     testing_set = data[math.floor(len(list_documents)*percentage):]
-    training_data = []
+
+    return training_set, testing_set
+
+def preprocessing(list_documents):
+    '''
+    read the documents (in format_text)
+    apply desire format text to each document 
+    Built data structure to run spacy model (HMM models)
+    '''
+    data = []
     list_entities = []
-    for i in training_set:
+    for i in list_documents:
         tuple1, entities = format_text(i)
-        training_data.append(tuple1)
+        data.append(tuple1)
         for i in entities:
             list_entities.append(i)
     #Get a list with the type of entities in the text
     list_entities = set(list_entities)
-
     #Take out cases where there is not label data
-    for i in training_data:
+    for i in data:
         if i[1]["entities"] == []:
-            training_data.remove(i)
+            data.remove(i)
 
-    return training_data, list_entities, testing_set
+    return data, list_entities
+
+
+#THREE FUNCTIONS
+## TESTING THE MODEL
+## ACCURACY FUNCTION
+
+
+###### FITTING THE MODEL
+def training(data, model=None, new_model_name = None, output_dir=None, n_iter=20):
+    """Set up the pipeline and entity recognizer, and train the new entity."""
+    if model is not None:
+        nlp = spacy.load(model)  # load existing spaCy model
+        print("Loaded model '%s'" % model)
+    else:
+        nlp = spacy.blank('es')  # create blank Language class
+        print("Created blank 'es' model")
+    # Add entity recognizer to model if it's not in the pipeline
+    # nlp.create_pipe works for built-ins that are registered with spaCy
+    if 'ner' not in nlp.pipe_names:
+        ner = nlp.create_pipe('ner')
+        nlp.add_pipe(ner)
+    # otherwise, get it, so we can add labels to it
+    else:
+        ner = nlp.get_pipe('ner')
+    for i in list_entities:    
+        ner.add_label(i)   # add new entity label to entity recognizer
+    if model is None:
+        optimizer = nlp.begin_training()
+    else:
+        # Note that 'begin_training' initializes the models, so it'll zero out
+        # existing entity types.
+        optimizer = nlp.entity.create_optimizer()
+
+    # get names of other pipes to disable them during training
+    other_pipes = [pipe for pipe in nlp.pipe_names if pipe != 'ner']
+    print("training model")
+    with nlp.disable_pipes(*other_pipes):  # only train NER
+        for itn in range(n_iter):
+            losses = {}
+            for text, annotations in data:
+                nlp.update([text], [annotations], sgd=optimizer, drop=0.35,
+                           losses=losses)
+            print(losses)
+
+    # save model to output directory
+    if output_dir is not None:
+        output_dir = Path(output_dir)
+        if not output_dir.exists():
+            output_dir.mkdir()
+        nlp.meta['name'] = new_model_name  # rename model
+        nlp.to_disk(output_dir)
+        print("Saved model to", output_dir)
+
+
+def testing(data,output_dir=None):
+
+    # test the saved model
+    print("Loading from", output_dir)
+    nlp = spacy.load(output_dir)
+    for i in data:
+        doc = nlp(i[0])
+        print("Entities in:")
+        print(i[1])
+        print("Predicted entities in:")
+        for ent in doc.ents:
+            print(ent.label_, ent.text)
 
 '''
 RUN IT
 '''
 
-list_documents = os.listdir("protest_annotation_chicago/raw")
-list1 = []
-for i in list_documents:
-    name = re.sub('\.txt$', '', i)
-    list1.append(name)
+if __name__ == '__main__':
 
-list_documents = list1
-training_data, list_entities, testing_set = train_data(list_documents,0.85)
-
-
+    list_documents = os.listdir("protest_annotation_chicago/raw")
+    list1 = []
+    for i in list_documents:
+        name = re.sub('\.txt$', '', i)
+        list1.append(name)
+    # Process data
+    list_documents = list1[0:50]
+    training_set, testing_set = splitting(list_documents, 0.85)
+    training_data, list_entities = preprocessing(training_set)
+    testing_data, list_entities = preprocessing(testing_set)
+    #Train models
+    training(data=training_data,new_model_name="test_1",output_dir="saved_models")
+    #Test models
+    testing(data=testing_data,output_dir="saved_models")
 
