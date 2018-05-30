@@ -19,6 +19,7 @@ from spacy.attrs import ENT_IOB, ENT_TYPE
 import plac
 import random
 from pathlib import Path
+from spacy import displacy
 
 ###### PREPROCESSING
 name = "AFP_SPA_19940707.0301"
@@ -164,6 +165,7 @@ def testing(data,output_dir=None):
         if tups[1]["entities"] != []:
             #Predict for each document
             doc = nlp(tups[0])
+
             list_tuples = []
             for ent in doc.ents:
                 tuple1 = (ent.start_char, ent.end_char,ent.label_)
@@ -185,13 +187,16 @@ def testing(data,output_dir=None):
             num_loc = num_loc/count_loc
             list_performance.append(num)
             list_performance_loc.append(num_loc)
+    #Display example:
+    doc = nlp(data[0][0])
+    displacy.serve(doc, style='ent')
     #Average accuracy in each document
     accuracy = sum(list_performance) / float(len(list_performance))
     accuracy_loc = sum(list_performance_loc) / float(len(list_performance_loc))
     
     return accuracy, accuracy_loc
 
-#displacy.serve(doc, style='ent')
+
 
 if __name__ == '__main__':
 
@@ -212,3 +217,8 @@ if __name__ == '__main__':
     print("The accuracy of the model is: {0} %".format(round(accuracy*100,3)))
     print("The accuracy of the model for class location is: {0} %".format(round(accuracy_loc*100,3)))
 
+
+number_l = []
+for i in training_data:
+    number = len(i[1]["entities"])
+    number_l.append(number)
