@@ -1,13 +1,13 @@
 
 
 
-############ METHOD 2
+############ NLP
 
 
 
 #Pedro Armengol
-#05/09/2018
-#Initial exercise to locate source and target in the text
+#05/30/2018
+#Initial exercise to locate source and target in the text (among other classes)
 from __future__ import unicode_literals, print_function
 import os
 import re
@@ -158,17 +158,30 @@ def testing(data,output_dir=None):
     # test the saved model
     print("Loading from", output_dir)
     nlp = spacy.load(output_dir)
-    for i in data:
-        doc = nlp(i[0])
-        print("Entities in:")
-        print(i[1])
-        print("Predicted entities in:")
+    list_performance = []
+    for tups in data:
+        print(tups[1])
+        #Predict for each document
+        doc = nlp(tups[0])
+        list_tuples = []
         for ent in doc.ents:
-            print(ent.label_, ent.text)
+            tuple1 = (ent.start_char, ent.end_char,ent.label_)
+            list_tuples.append(tuple1)
+        #Check accuracy
+        num = 0
+        for j in tups[1]["entities"]:
+            for i in list_tuples:
+                if j == i:
+                    num += 1
+        #How many of the original entities wherecorrctly predicted
+        num = num/(len(tups[1]["entities"])+1)
+        list_performance.append(num)
+    print(list_performance)
+    #Average accuracy in each document
+    accuracy = sum(list_performance) / float(len(list_performance))
+    return accuracy
 
-'''
-RUN IT
-'''
+
 
 if __name__ == '__main__':
 
@@ -185,5 +198,6 @@ if __name__ == '__main__':
     #Train models
     training(data=training_data,new_model_name="test_1",output_dir="saved_models")
     #Test models
-    testing(data=testing_data,output_dir="saved_models")
+    accuracy = testing(data=testing_data,output_dir="saved_models")
+    print("The accuracy of the model is: {0} %".format(round(accuracy*100,3)))
 
