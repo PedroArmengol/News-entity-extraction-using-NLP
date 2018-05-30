@@ -159,29 +159,39 @@ def testing(data,output_dir=None):
     print("Loading from", output_dir)
     nlp = spacy.load(output_dir)
     list_performance = []
+    list_performance_loc = []
     for tups in data:
-        print(tups[1])
-        #Predict for each document
-        doc = nlp(tups[0])
-        list_tuples = []
-        for ent in doc.ents:
-            tuple1 = (ent.start_char, ent.end_char,ent.label_)
-            list_tuples.append(tuple1)
-        #Check accuracy
-        num = 0
-        for j in tups[1]["entities"]:
-            for i in list_tuples:
-                if j == i:
-                    num += 1
-        #How many of the original entities wherecorrctly predicted
-        num = num/(len(tups[1]["entities"])+1)
-        list_performance.append(num)
-    print(list_performance)
+        if tups[1]["entities"] != []:
+            #Predict for each document
+            doc = nlp(tups[0])
+            list_tuples = []
+            for ent in doc.ents:
+                tuple1 = (ent.start_char, ent.end_char,ent.label_)
+                list_tuples.append(tuple1)
+            #Check accuracy overall
+            num = 0
+            num_loc = 0
+            count_loc = 0
+            for j in tups[1]["entities"]:
+                if j[2] == "location":
+                    count_loc += 1
+                for i in list_tuples:
+                     if j == i:
+                        num += 1
+                        if j[2] == "location":
+                            num_loc += 1        
+            #How many of the original entities wherecorrctly predicted
+            num = num/(len(tups[1]["entities"]))
+            num_loc = num_loc/count_loc
+            list_performance.append(num)
+            list_performance_loc.append(num_loc)
     #Average accuracy in each document
     accuracy = sum(list_performance) / float(len(list_performance))
-    return accuracy
+    accuracy_loc = sum(list_performance_loc) / float(len(list_performance_loc))
+    
+    return accuracy, accuracy_loc
 
-
+#displacy.serve(doc, style='ent')
 
 if __name__ == '__main__':
 
@@ -198,6 +208,7 @@ if __name__ == '__main__':
     #Train models
     training(data=training_data,new_model_name="test_1",output_dir="saved_models")
     #Test models
-    accuracy = testing(data=testing_data,output_dir="saved_models")
+    accuracy, accuracy_loc = testing(data=testing_data,output_dir="saved_models")
     print("The accuracy of the model is: {0} %".format(round(accuracy*100,3)))
+    print("The accuracy of the model for class location is: {0} %".format(round(accuracy_loc*100,3)))
 
