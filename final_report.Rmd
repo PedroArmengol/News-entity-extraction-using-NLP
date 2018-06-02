@@ -15,29 +15,29 @@ knitr::opts_chunk$set(echo = TRUE)
 Abstract
 \end{center}
 
-The Boosting Eventus ID project is a Natural Language Processing Pipeline designed to apply Name Entity Recognition (NER) to news texts in Spanish. The software uses label data elaborated by the Researcher Javier Osorio to fit neuronal models (using the SpaCy package) to predict 7 categories (Target, source, location and so on).The accuracy of the model, defined as exact match of class as well as word start and end location, is around 14% for all the classes and around 45% for the location class. Further extensions of this research will include Entity Relationship Extraction from the news.
+The Boosting Eventus ID project is a Natural Language Processing Pipeline designed to apply Name Entity Recognition (NER) to news texts in Spanish. The software uses label data elaborated by the Researcher Javier Osorio to fit neuronal models (using the SpaCy package) to predict 7 categories (Target, source, location and so on). The accuracy of the model, defined as exact match of class as well as word start and end location, is around 14% for all the classes and around 45% for the location class.
 
 # Introduction 
 
-More than 2 million articules are published every year on the web. Those articules posses a universe of information about facts and trends, many times, not available in structured datasets (that are prone to be use for statistical analysis). Also, those articles are in thousands of lenguages, formats and styles making a very difficult task the standarization of their content into structured information. However, through natural lenaguage processing and statistical learning techniques, I used the features of each word to predict their class (target, source, locatio and so on): where every class could be compose of one or more words. 
+Around 1 million articles are published every day on the web[^1]. Those articles possess a universe of information about facts and trends, many times, not available in structured data sets (that are prone to be used for statistical analysis). Also, those articles are in thousands of languages, formats, and styles making the standardization of their content into structured information a very difficult task. However, through natural language processing and statistical learning techniques, I used the features of each word to predict their class (target, source, location and so on), where every class could be composed of one or more words. 
 
-One first attempt to systematize the information in news was the creation of the Conflict and Mediation Events Observations  (CAMEO) catalog. CAMEO is a coding scheme that catalog autors and events, specialized for automatized coding and for the register of sub-national authors (previous coding schemes where capable just to deal with national level authors (they where unable to catalog asymetrical warefare for example). The cited catalog has been used in several projects including the Integrated Conflict Early Warning System a DARPA – Lockheed Martin Project joint venture project.
+One first attempt to systematize the information in news was the creation of the Conflict and Mediation Events Observations  (CAMEO) catalog. CAMEO is a coding scheme that catalogs authors and events, specialized for automatized coding and for the register of sub-national authors (previous coding schemes where capable just to deal with national level authors (they were unable to catalog asymmetrical warfare for example). The cited catalog has been used in several projects including the Integrated Conflict Early Warning System a DARPA  Lockheed Martin Project joint venture project.
 
-One step further, the Global Database of Events, Language and Tone (GDETL) is an effort to systematize the global media through the implementation of worldwide collector of news in more than 28 lenguages and machine learning techniques to systematize their information using the CAMEO labels. The GDETL website (now powered by Jinsaw - Google) claim to have systematize more than 500 million news since start operating.
+One step further, the Global Database of Events, Language and Tone (GDETL) is an effort to systematize the global media through the implementation of a worldwide collector of news in more than 28 languages and machine learning techniques to systematize their information using the CAMEO labels. The GDETL website (now powered by Jigsaw - Google) claim to have systematize more than 250 million news articles dating back to 1970[^2].
 
-However, for some lenguages, including Spanish, the GDETL database seems to perform particularly poorly (Osorio 2013).The is the reason that leaded the researcher Javier Osorio to develop techniques that could systematize news texts in Spanish. Particualrly, Osorio (2018) did a extraction of classes based on exact matches, looking for concepts related to drug traffiking in Mexican Army reports. Despite of a high the level of accuracy reached in the exercise, around 70 percent, there are concerns that this matching rules could overfit models for the particular task such that in other contexts they performs poorly.
+However, for some languages, including Spanish, the GDETL database seems to perform particularly poorly (Osorio & Reyes 2014). This is the reason that led the researcher Javier Osorio to develop techniques that could systematize news texts in Spanish. Particularly, Osorio & Reyes (2014) did develop an extraction of classes based on exact matches, looking for concepts related to drug trafficking in Mexican Army reports. Despite the high the level of accuracy reached in the exercise, around 70 percent, there are concerns that this matching rules could over-fit models for the particular task such that in other contexts they perform poorly.
 
-As a contribution in the same direction, this project uses statistical learning techniques, particurly neuronal networks implemented with SpaCy, to classified the CAMEO classes that where labeled by the Osorio's research team.
+As a contribution in the same direction, this project uses statistical learning techniques, particularly neuronal networks implemented with SpaCy, to classify the CAMEO classes that were labeled by the Osorio's research team.
 
 # Data
 
-This research uses 724 news texts in Spanish coming from the Linguistic Data Consortium (LDC) Gigaword project. Each news text was labeled with the CAMEO classifications (particularly from the Protest sub-category). The categories are "location","material coperation", "material cooperation", "source", "target", "verbal cooperation" and "verbal conflict". There around 19 labels for each news with an standar desviation of around 16 labels (there is an important variation in the number of labels for each text).
+This research uses 724 news texts in Spanish coming from the Linguistic Data Consortium (LDC) Gigaword project. Each news text was labeled with the CAMEO classifications (particularly from the Protest sub-category). The categories are "location", "material cooperation", "source", "target", "verbal cooperation" and "verbal conflict". There are around 19 labels for each news with a standard deviation of around 16 labels (there is an important variation in the number of labels for each text).
 
 ```{r fig1, echo=FALSE, fig.cap="Input: tuples structure", out.width = '100%'}
 knitr::include_graphics("figures/figure1")
 ```
 
-In **Figure 1** depicts the inputs of the prediction model fitted in the next section. Basically, each text is extracted and stored as the first position of a tuple where the second position of the tuple are the labels (with class and starting/ending position of the word or words that compose the class).
+**Figure 1** depicts the inputs of the prediction model fitted in the next section. Basically, each text is extracted and stored as the first position of a tuple where the second position of the tuple is the labels (with class and starting/ending position of the word or words that compose the class).
 
 # Pipeline
 
@@ -48,13 +48,13 @@ The pipeline or process of prediction if composed of four components:
 * Training 
 * Test
 
-**Preprocessing** basically is divided in two functons: one takes the texts with labels provided by Osorio and create tuples with them (one tuple for each news text) and the second takes the first element of the tuple and process the text to create first sentences, then tokens (one forevery words) and then assigns Part-of-speech (POS), entity recognition (ER) and dependency parsing (DP) (see **Figure 2**). 
+**Preprocessing** basically is divided into two functions: one takes the texts with labels provided by Osorio and creates tuples with them (one tuple for each news text). The second takes the first element of the tuple and processes the text to create first sentences, then tokens (one for every word) and then assigns Part-of-speech (POS), entity recognition (ER) and dependency parsing (DP) (see **Figure 2**). 
 
 ```{r fig2, echo=FALSE, fig.cap="Preprocessing: second function funnel - source: NLTK", out.width = '100%'}
 knitr::include_graphics("figures/figure2")
 ```
 
-The implemented pipeline uses the SpaCy package for the second function of preprocessing. SpaCy, uses annotated corpuses in Spanish to predict each one of the token values (POS, ER or DP). According to the results reported in their website, the accuracy rates of those predictions are adove 89 % for each category (see *Figure 3**).
+The implemented pipeline uses the SpaCy package for the second function of preprocessing. SpaCy, uses annotated courses in Spanish to predict each one of the token values (POS, ER or DP). According to the results reported on their website, the accuracy rates of those predictions are above 89 % for each category (see *Figure 3**).
 
 ```{r fig3, echo=FALSE, fig.cap="Preprocessing: accuracy, SpaCy tokenization - source: SpaCy", out.width = '100%'}
 knitr::include_graphics("figures/figure3")
@@ -64,29 +64,48 @@ After the preprocessing step, an **splitting** of the tuples (news texts) is don
 
 Later, the **training** data is used as an input of the Neuronal Network model with a gradient descent optimizer behind (see **Figure 4**).
 
-```{r fig3, echo=FALSE, fig.cap="Training: interaction between the splitting and training components - source: SpaCy", out.width = '100%'}
+```{r fig4, echo=FALSE, fig.cap="Training: interaction between the splitting and training components - source: SpaCy", out.width = '100%'}
 knitr::include_graphics("figures/figure4")
 ```
 
-The statistical model used to determine the weights of the tokens to predict the class is not discloure by SpaCy, but is likely to be very similar to the Dynamic Recurrent Acyclic Graphical Neural Networks (DRAGNN) model. The framework about how a DRAGNN work is shown in **Figure 5**.
+The statistical model used to determine the weights of the tokens to predict the class is not disclosed by SpaCy, but is likely to be very similar to the Dynamic Recurrent Acyclic Graphical Neural Networks (DRAGNN) model. The framework about how a DRAGNN work is shown in **Figure 5**. Previous testings of those models have reached as high as 93% of accuracy in similar problems (where the human accuracy is 97%).
 
-```{r fig3, echo=FALSE, fig.cap="Training: DRAGNN Framework - source: Source: https://github.com/tensorflow/models/tree/master/research/syntaxnet", out.width = '100%'}
+```{r fig5, echo=FALSE, fig.cap="Model - DRAGNN - source: Source: https://github.com/tensorflow/models/tree/master/research/syntaxnet", out.width = '100%'}
 knitr::include_graphics("figures/figure5")
 ```
 
-Lastly, in the **testing** section, the predicted labels are compared with the actual values (to recall: each value is represented by a class and a start/end position in the text of the word or words that compose the class). If there is a exact match (in class and position) then the label is consider as correctly predicted. Accuracy is just the sum of the correctly predicted labels over all the labels in the different texts (remember that this tests where not using in the training of the model such that is an out-of-sample prediction).
+Lastly, in the **testing** section, the predicted labels are compared with the actual values (to recall: each value is represented by a class and a start/end position in the text of the word or words that compose the class). If there is an exact match (in class and position) then the label is considered as correctly predicted. Accuracy is just the sum of the correctly predicted labels over all the labels in the different texts (remember that these tests were not using in the training of the model such that is an out-of-sample prediction).
+
 
 # Results
 
-So far, the described pipeline was tested with a sample o 50 articules:
+So far, the described pipeline was tested with a sample of 50 news articles, where 85% of the sample was used as the training sample and 15% as the testing sample.
 
+As a first result, the loss functions decreased in every interaction over the training set **Figure 6** (a backward and forward pass of the data). This is a healthy sign that model is updating its weights based on learning of the observed samples. The drop-out rate used for this estimation was of 0.35.
 
+```{r fig6, echo=FALSE, fig.cap="Training: Loss decrease - source: Source: own estimations", out.width = '100%'}
+knitr::include_graphics("figures/figure6")
+```
 
+The accuracy obtained in this estimation was of 14% for all the classes but it varied by class. For example, in the class "location" the accuracy was as high as 44%.
 
+The accuracy is not as high as predicted because in this exercise no other token values where added in the preprocessing section (just the words as tokens) and the sample of news articles is relatively low: less than 10% of the label data available.
 
+However, despite the low accuracy of this exercise, interesting insights shed some light on the usefulness of the pipeline. For example, in **Figure 7** the class classification can be observed for one sample news article:
 
+```{r fig7, echo=FALSE, fig.cap="Testing: Class visualization - source: Source: own estimations", out.width = '100%'}
+knitr::include_graphics("figures/figure7")
+```
 
+First, the model is able to differentiate between sources and targets (however in this case there overlap between predictions). Second, the model can detect relatively well the location of the article. It is particularly promising that the model can distinguish two different classes for a sample token depending on the surrounding context (in this case "Israel" was the source of the action and also the place of the news: Jerusalem, Israel). Third, the material conflict, verbal cooperation and so on classes are particularly hard to predict because they are, normally, long sequences of words around a noun: our model is locating the verbs but not limiting correctly the other words of such classes.
 
+# Conclusion
 
+The Boosting Eventus ID project is a Natural Language Processing Pipeline designed to apply Name Entity Recognition (NER) to news texts in Spanish. The software uses label data elaborated by the Researcher Javier Osorio to fit neuronal models (using the SpaCy package) to predict 7 categories (Target, source, location, and so on). The accuracy of the model, defined as the exact match of class as well as word start and end location, is around 14% for all the classes and around 45% for the location class. 
 
+# Bibliography
 
+Javier Osorio and Alejandro Reyes. 2014. Eventus ID. Supervised Event Coding From Text Written in Spanish. Version 2.0
+
+[^1]: According to the worldwide blog activity published by WordPress.com
+[^2]: The GDETL Story: https://www.gdeltproject.org/about.html
